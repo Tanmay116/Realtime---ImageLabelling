@@ -25,28 +25,30 @@ class _CameraScreenState extends State<CameraScreen> {
   //TODO declare ImageLabeler
   dynamic imageLabeler;
   bool isBusy = false;
-  int i = 0;
+  int cam = 0;
 
   @override
   void initState() {
     super.initState();
     //TODO initialize labeler
-    final ImageLabelerOptions options = ImageLabelerOptions(confidenceThreshold: 0.5);
+    final ImageLabelerOptions options =
+        ImageLabelerOptions(confidenceThreshold: 0.65);
     imageLabeler = ImageLabeler(options: options);
 
     //TODO initialize the controller
-    controller = CameraController(_cameras[i], ResolutionPreset.high);
+    controller = CameraController(_cameras[cam], ResolutionPreset.low);
     controller.initialize().then((_) {
       if (!mounted) {
         return;
       }
       controller.startImageStream((image) => {
-        if(isBusy == false){
-        img = image,
-        doImageLabeling(),
-        isBusy = true,
-        }
-      });
+            if (isBusy == false)
+              {
+                img = image,
+                doImageLabeling(),
+                isBusy = true,
+              }
+          });
       setState(() {});
     }).catchError((Object e) {
       if (e is CameraException) {
@@ -67,16 +69,16 @@ class _CameraScreenState extends State<CameraScreen> {
     InputImage inputImage = getInputImage();
     final List<ImageLabel> labels = await imageLabeler.processImage(inputImage);
 
-for (ImageLabel label in labels) {
-  final String text = label.label;
-  // final int index = label.index;
-  final double confidence = label.confidence;
-  result += text + " " + confidence.toStringAsFixed(2) + "\n";
-}
+    for (ImageLabel label in labels) {
+      final String text = label.label;
+      // final int index = label.index;
+      final double confidence = label.confidence;
+      result += "$text ${confidence.toStringAsFixed(2)}\n";
+    }
     setState(() {
       result;
     });
-isBusy = false;
+    isBusy = false;
   }
 
   CameraImage? img;
@@ -89,7 +91,7 @@ isBusy = false;
 
     final Size imageSize = Size(img!.width.toDouble(), img!.height.toDouble());
 
-    final camera = _cameras[0];
+    final camera = _cameras[cam];
     final imageRotation =
         InputImageRotationValue.fromRawValue(camera.sensorOrientation);
     // if (imageRotation == null) return;
@@ -132,22 +134,45 @@ isBusy = false;
     if (!controller.value.isInitialized) {
       return Container();
     }
-    return MaterialApp(
-      home: Stack(
-        fit: StackFit.expand,
-        children: [
-          CameraPreview(controller),
-          Container(
-            margin: const EdgeInsets.only(left: 10, bottom: 10),
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              child: Text(
-                result,
-                style: const TextStyle(color: Colors.white, fontSize: 25),
+    return SafeArea(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Stack(
+          fit: StackFit.expand,
+          children: [
+            CameraPreview(controller),
+            GestureDetector(
+              onTap: () {
+                if (cam == 0) {
+                    cam = 1;
+                  } else if (cam == 1) {
+                    cam = 0;
+                  }
+                setState(() {
+                  cam;
+                });
+              },
+              child: Container(
+                // color: Colors.black,
+                height: 5,
+                width: 5,
+                margin: const EdgeInsets.only(left: 10, bottom: 10),
+                alignment: Alignment.topCenter,
+                child: Text(cam.toString()),
               ),
             ),
-          )
-        ],
+            Container(
+              margin: const EdgeInsets.only(left: 10, bottom: 10),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  result,
+                  style: const TextStyle(color: Colors.white, fontSize: 25),
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
